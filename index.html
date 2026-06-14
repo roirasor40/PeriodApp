@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Prevents frustrating browser auto-zoom layouts on iOS inputs -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Runs full-screen without Safari browser bars when saved to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Cycle Log</title>
+    <style>
+        :root {
+            --ios-pink: #ff2d55;
+            --ios-bg: #f2f2f7;
+            --ios-card: #ffffff;
+            --ios-text: #000000;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--ios-bg);
+            color: var(--ios-text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-user-select: none; /* Prevents text selection popups on tap */
+        }
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--ios-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+            margin-top: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            color: var(--ios-pink);
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input[type="date"], select {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px; /* Must be 16px+ to stop iOS Safari zoom behavior */
+            border: 1px solid #d1d1d6;
+            border-radius: 10px;
+            background-color: #fff;
+            box-sizing: border-box;
+            -webkit-appearance: none; /* Strips default styling for clean iOS curves */
+        }
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-top: 1px solid #e5e5ea;
+            border-bottom: 1px solid #e5e5ea;
+            margin-bottom: 20px;
+        }
+        .toggle-label {
+            color: #000;
+            font-size: 17px;
+            font-weight: 500;
+        }
+        /* Native iOS Green Switch Track */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 51px;
+            height: 31px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e5e5ea; transition: .3s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
+            background-color: white; transition: .3s; border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        input:checked + .slider { background-color: #34c759; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        button {
+            width: 100%;
+            background-color: var(--ios-pink);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 10px rgba(255, 45, 85, 0.3);
+        }
+        button:active { opacity: 0.85; transform: scale(0.99); }
+        #status-msg {
+            text-align: center; margin-top: 16px; font-size: 15px; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>Cycle Log</h1>
+    <form id="trackerForm">
+        <div class="form-group">
+            <label for="logDate">Select Date</label>
+            <input type="date" id="logDate" required>
+        </div>
+
+        <div class="toggle-container">
+            <span class="toggle-label">Period Started?</span>
+            <label class="switch">
+                <input type="checkbox" id="periodToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label for="feelings">Feelings / Symptoms</label>
+            <select id="feelings">
+                <option value="">-- Select Mood --</option>
+                <option value="Normal">Normal</option>
+                <option value="Cramps">Cramps</option>
+                <option value="Tired">Tired</option>
+                <option value="Depressed">Depressed</option>
+                <option value="Anxious">Anxious</option>
+                <option value="Bloated">Bloated</option>
+            </select>
+        </div>
+
+        <button type="submit">Save Entry</button>
+    </form>
+    <div id="status-msg"></div>
+</div>
+
+<script>
+    // Automatically set the date input field to today's current calendar date
+    document.getElementById('logDate').valueAsDate = new Date();
+
+    document.getElementById('trackerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const statusDiv = document.getElementById('status-msg');
+        statusDiv.style.color = '#8e8e93';
+        statusDiv.innerText = "Saving entry...";
+
+        // Handle browser timezone shifts safely using UTC object parsing
+        const dateVal = new Date(document.getElementById('logDate').value);
+        const day = dateVal.getUTCDate();
+        const year = dateVal.getUTCFullYear();
+        
+        const monthNames = [
+            "January", "February", "March", "April", "May", "June", 
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const monthStr = monthNames[dateVal.getUTCMonth()];
+
+        const payload = {
+            year: year,
+            month: monthStr,
+            day: day,
+            period: document.getElementById('periodToggle').checked,
+            feelings: document.getElementById('feelings').value
+        };
+
+        try {
+            const response = await fetch('/api/log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+                statusDiv.style.color = '#34c759'; // Apple Success Green
+                statusDiv.innerText = "Saved to local CSV file successfully!";
+            } else {
+                statusDiv.style.color = '#ff2d55'; // Apple Error Red
+                statusDiv.innerText = `Error: ${data.detail}`;
+            }
+        } catch (err) {
+            statusDiv.style.color = '#ff2d55';
+            statusDiv.innerText = "Network failure. Cannot reach backend server.";
+        }
+    });
+</script>
+</body>
+</html>

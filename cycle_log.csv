@@ -515,7 +515,7 @@ Year,Month,Day,Period?,Feelings/Symptoms,Machine Learning Prediction
 2026,May,29,False,,
 2026,May,30,False,,
 2026,May,31,False,,
-2026,June,1,False,,
+2026,June,1,True,Depressed,
 2026,June,2,False,,
 2026,June,3,False,,
 2026,June,4,False,,
